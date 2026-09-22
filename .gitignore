@@ -1,0 +1,14 @@
+.vs/
+bin/
+obj/
+
+# Local personal test/export files
+*.qif
+*.qdf
+*.xlsx
+*.pdf
+
+# Local IDE/user state
+*.user
+*.suo
+*.telemetry.json

@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="ExcelToQuicken/ExcelToQuicken.csproj" />
+  <Project Path="ExcelToQuicken.Tests/ExcelToQuicken.Tests.csproj" />
+</Solution>
