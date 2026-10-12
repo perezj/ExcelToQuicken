@@ -17,6 +17,7 @@ public sealed class CategoryRule : INotifyPropertyChanged
     private string _matchText = "";
     private string _category = "";
     private string _tag = "";
+    private string? _payee;
     private bool _stopProcessing = true;
 
     public Guid Id { get => _id; set => Set(ref _id, value); }
@@ -28,12 +29,13 @@ public sealed class CategoryRule : INotifyPropertyChanged
     public string MatchText { get => _matchText; set => Set(ref _matchText, value); }
     public string Category { get => _category; set => Set(ref _category, value); }
     public string Tag { get => _tag; set => Set(ref _tag, value); }
+    public string? Payee { get => _payee; set => Set(ref _payee, string.IsNullOrWhiteSpace(value) ? null : value.Trim()); }
     public bool StopProcessing { get => _stopProcessing; set => Set(ref _stopProcessing, value); }
 
     public CategoryRule Clone() => new()
     {
         Id = Id, Name = Name, Enabled = Enabled, Priority = Priority, MatchField = MatchField,
-        MatchType = MatchType, MatchText = MatchText, Category = Category, Tag = Tag,
+        MatchType = MatchType, MatchText = MatchText, Category = Category, Tag = Tag, Payee = Payee,
         StopProcessing = StopProcessing
     };
 

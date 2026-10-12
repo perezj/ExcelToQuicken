@@ -10,7 +10,7 @@ public sealed class ExcelWorkbookCategorizer
     private const int HeaderSearchLimit = 20;
 
     private static readonly HashSet<string> DescriptionHeaders =
-        new(StringComparer.OrdinalIgnoreCase) { "DESCRIPCION", "DESCRIPTION", "CONCEPTO" };
+        new(StringComparer.OrdinalIgnoreCase) { "DESCRIPCION", "DESCRIPTION", "CONCEPTO", "PAYEE", "BENEFICIARIO" };
 
     private static readonly HashSet<string> CategoryHeaders =
         new(StringComparer.OrdinalIgnoreCase) { "CATEGORY", "CATEGORIA" };
@@ -87,6 +87,14 @@ public sealed class ExcelWorkbookCategorizer
                     worksheet.Cell(row, memoColumn.Value).Value = formatted.Memo;
                 }
 
+                var match = _postProcessor.DetermineMatch(formatted.Description, formatted.Memo);
+                if (match.Error != null) throw new InvalidDataException(match.Error);
+
+                if (!string.IsNullOrWhiteSpace(match.Payee))
+                {
+                    descriptionCell.Value = match.Payee;
+                }
+
                 var categoryCell = worksheet.Cell(row, categoryColumn);
                 var hadExistingCategory = categoryCell.HasFormula || !string.IsNullOrWhiteSpace(categoryCell.GetString());
                 if (hadExistingCategory) existingCategories++;
@@ -95,8 +103,6 @@ public sealed class ExcelWorkbookCategorizer
                     continue;
                 }
 
-                var match = _postProcessor.DetermineMatch(formatted.Description, formatted.Memo);
-                if (match.Error != null) throw new InvalidDataException(match.Error);
                 var category = match.Category;
 
                 if (string.IsNullOrWhiteSpace(category))

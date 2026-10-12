@@ -39,6 +39,15 @@ public sealed class QifValidationException : Exception
 public sealed class QifExporter
 {
     private const int HeaderSearchLimit = 20;
+    // Conservative import compatibility limit; the workbook retains the longer memo.
+    private const int QifMemoLimit = 64;
+    private static readonly Encoding QifEncoding = CreateQifEncoding();
+
+    private static Encoding CreateQifEncoding()
+    {
+        Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+        return Encoding.GetEncoding(1252);
+    }
 
     private static readonly HashSet<string> DateHeaders =
         new(StringComparer.OrdinalIgnoreCase) { "DATE", "FECHA" };
@@ -184,10 +193,6 @@ public sealed class QifExporter
     {
         var lines = new List<string>
         {
-            "!Account",
-            $"N{CleanControlText(mapping.QuickenAccountName)}",
-            $"T{NormalizeAccountType(mapping.AccountType)}",
-            "^",
             $"!Type:{NormalizeAccountType(mapping.AccountType)}"
         };
 
@@ -196,20 +201,17 @@ public sealed class QifExporter
             var formattedText = TransactionDescriptionFormatter.Format(transaction.Payee, transaction.Memo);
             var amount = transaction.Amount.ToString("0.00", CultureInfo.InvariantCulture);
             lines.Add($"D{transaction.Date:MM/dd/yyyy}");
-            lines.Add($"U{amount}");
             lines.Add($"T{amount}");
-            lines.Add("N.");
-            lines.Add("C*");
             lines.Add($"P{CleanControlText(formattedText.Description)}");
             if (!string.IsNullOrWhiteSpace(formattedText.Memo))
-                lines.Add($"M{CleanControlText(formattedText.Memo)}");
+                lines.Add($"M{LimitMemo(CleanControlText(formattedText.Memo))}");
             var category = BuildCategory(transaction.Category, transaction.Tag);
             if (!string.IsNullOrWhiteSpace(category))
                 lines.Add($"L{category}");
             lines.Add("^");
         }
 
-        File.WriteAllLines(path, lines, Encoding.Latin1);
+        File.WriteAllLines(path, lines, QifEncoding);
     }
 
     private static List<QifTransaction> ReadTransactions(
@@ -372,8 +374,17 @@ public sealed class QifExporter
     private static string NormalizeAccountType(string type) =>
         QifAccountTypes.All.First(candidate => string.Equals(candidate, type, StringComparison.OrdinalIgnoreCase));
 
+    private static string LimitMemo(string value)
+    {
+        if (value.Length <= QifMemoLimit) return value;
+        var shortened = value[..(QifMemoLimit - 3)].TrimEnd();
+        var lastSpace = shortened.LastIndexOf(' ');
+        if (lastSpace > 0) shortened = shortened[..lastSpace];
+        return shortened.TrimEnd() + "...";
+    }
+
     private static string CleanControlText(string value) =>
-        string.Join(" ", value.Replace('^', ' ').Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)).Trim();
+        string.Join(" ", value.Replace("…", "...").Replace('^', ' ').Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)).Trim();
 
     private static string NormalizeHeader(string value)
     {

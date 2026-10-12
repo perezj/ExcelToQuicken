@@ -41,6 +41,6 @@ public sealed class TransactionPostProcessorTests
             new string('x', 320));
 
         Assert.True(result.Memo.Length <= 255);
-        Assert.EndsWith("…", result.Memo);
+        Assert.EndsWith("...", result.Memo);
     }
 }

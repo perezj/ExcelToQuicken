@@ -4,7 +4,7 @@ using System.Text.RegularExpressions;
 
 namespace BanortePDFToExcel;
 
-public sealed record CategoryMatchResult(bool Matched, string Category = "", string Tag = "", string? Error = null);
+public sealed record CategoryMatchResult(bool Matched, string Category = "", string Tag = "", string? Payee = null, string? Error = null);
 
 public sealed class CategoryRuleEngine
 {
@@ -20,7 +20,7 @@ public sealed class CategoryRuleEngine
             if (result.Error != null) return result;
             if (result.Matched)
             {
-                lastMatch = new(true, rule.Category, rule.Tag);
+                lastMatch = new(true, rule.Category, rule.Tag, rule.Payee);
                 if (rule.StopProcessing) return lastMatch;
             }
         }

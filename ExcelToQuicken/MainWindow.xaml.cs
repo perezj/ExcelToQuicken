@@ -26,6 +26,7 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        IncludeUncategorizedCheckBox.IsChecked = true;
         _rules = new ObservableCollection<CategoryRule>(_store.Load());
         _ruleView = CollectionViewSource.GetDefaultView(_rules);
         RulesGrid.ItemsSource = _ruleView;
@@ -33,7 +34,7 @@ public partial class MainWindow : Window
         Closing += MainWindow_Closing;
     }
     private void MainWindow_Closing(object? sender, CancelEventArgs e) { if (_dirty && MessageBox.Show(this, "You have unsaved category rule changes. Close without saving?", "Unsaved changes", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes) e.Cancel = true; }
-    private void RuleSearchBox_TextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e) { var q = RuleSearchBox.Text.Trim(); _ruleView.Filter = o => o is CategoryRule r && (string.IsNullOrWhiteSpace(q) || r.Name.Contains(q, StringComparison.OrdinalIgnoreCase) || r.MatchText.Contains(q, StringComparison.OrdinalIgnoreCase) || r.Category.Contains(q, StringComparison.OrdinalIgnoreCase)); }
+    private void RuleSearchBox_TextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e) { var q = RuleSearchBox.Text.Trim(); _ruleView.Filter = o => o is CategoryRule r && (string.IsNullOrWhiteSpace(q) || r.Name.Contains(q, StringComparison.OrdinalIgnoreCase) || r.MatchText.Contains(q, StringComparison.OrdinalIgnoreCase) || r.Category.Contains(q, StringComparison.OrdinalIgnoreCase) || r.Tag.Contains(q, StringComparison.OrdinalIgnoreCase) || (r.Payee?.Contains(q, StringComparison.OrdinalIgnoreCase) == true)); }
     private CategoryRule? Selected => RulesGrid.SelectedItem as CategoryRule;
     private void AddRule_Click(object s, RoutedEventArgs e) { var rule = new CategoryRule { Priority = _rules.Count }; if (Edit(rule)) { _rules.Add(rule); Dirty(); } }
     private void EditRule_Click(object s, RoutedEventArgs e) { if (Selected is { } r && Edit(r)) Dirty(); }

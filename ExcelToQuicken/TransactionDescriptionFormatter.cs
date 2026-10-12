@@ -8,6 +8,7 @@ public static class TransactionDescriptionFormatter
 {
     private const int QuickenPayeeLimit = 64;
     private const int QuickenMemoLimit = 255;
+    private const string TruncationMarker = "...";
 
     private static readonly Regex BeneficiaryRegex = new(
         @"\bBENEF\s*:\s*(?<value>.*?)(?=\s*\(|\s+DATO\b|\s+CVE\s+RASTREO\b|$)",
@@ -34,11 +35,6 @@ public static class TransactionDescriptionFormatter
                 .Trim(' ', '-', ',');
 
         var detailMemo = details.Select(detail => $"{detail.Label}: {detail.Value}").ToList();
-        if (payee.Length > QuickenPayeeLimit)
-        {
-            detailMemo.Add($"Descripción original: {source}");
-        }
-
         var memoParts = detailMemo
             .Concat(IsSameAsSource(existingMemo, source) ? [] : [existingMemo])
             .Where(part => !string.IsNullOrWhiteSpace(part))
@@ -74,9 +70,9 @@ public static class TransactionDescriptionFormatter
     {
         if (value.Length <= maxLength) return value;
 
-        var cut = value[..(maxLength - 1)].TrimEnd();
+        var cut = value[..(maxLength - TruncationMarker.Length)].TrimEnd();
         var lastSpace = cut.LastIndexOf(' ');
         if (lastSpace > 0) cut = cut[..lastSpace];
-        return cut.TrimEnd(' ', '-', ',', ':') + "…";
+        return cut.TrimEnd(' ', '-', ',', ':') + TruncationMarker;
     }
 }

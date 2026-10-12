@@ -21,7 +21,12 @@ public sealed class TransactionPostProcessor
             tx.Description = formatted.Description;
             tx.Memo = formatted.Memo;
             var match = _engine.Match(tx.Description, tx.Memo);
-            if (match.Matched) { tx.Category = match.Category; if (!string.IsNullOrWhiteSpace(match.Tag)) tx.Tag = match.Tag; }
+            if (match.Matched)
+            {
+                tx.Category = match.Category;
+                if (!string.IsNullOrWhiteSpace(match.Tag)) tx.Tag = match.Tag;
+                if (!string.IsNullOrWhiteSpace(match.Payee)) tx.Description = match.Payee;
+            }
         }
         return transactions;
     }

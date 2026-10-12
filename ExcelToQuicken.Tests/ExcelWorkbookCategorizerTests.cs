@@ -83,6 +83,40 @@ public sealed class ExcelWorkbookCategorizerTests
     }
 
     [Fact]
+    public void Categorize_ReplacesPayeeEvenWhenExistingCategoryIsPreserved()
+    {
+        var testDirectory = CreateTestDirectory();
+        var inputPath = Path.Combine(testDirectory, "input.xlsx");
+        var outputPath = Path.Combine(testDirectory, "output.xlsx");
+
+        try
+        {
+            using (var workbook = new XLWorkbook())
+            {
+                var worksheet = workbook.Worksheets.Add("Cuenta");
+                worksheet.Cell(1, 1).Value = "Date";
+                worksheet.Cell(1, 2).Value = "Payee";
+                worksheet.Cell(1, 3).Value = "Category";
+                worksheet.Cell(2, 2).Value = "Long merchant text";
+                worksheet.Cell(2, 3).Value = "My manual category";
+                workbook.SaveAs(inputPath);
+            }
+
+            var rules = new[] { new CategoryRule { MatchText = "merchant", Category = "Food", Payee = "Short payee" } };
+            new ExcelWorkbookCategorizer(new TransactionPostProcessor(rules)).Categorize(inputPath, outputPath);
+
+            using var categorizedWorkbook = new XLWorkbook(outputPath);
+            var sheet = categorizedWorkbook.Worksheet("Cuenta");
+            Assert.Equal("Short payee", sheet.Cell(2, 2).GetString());
+            Assert.Equal("My manual category", sheet.Cell(2, 3).GetString());
+        }
+        finally
+        {
+            Directory.Delete(testDirectory, recursive: true);
+        }
+    }
+
+    [Fact]
     public void Categorize_CreatesMemoColumnForLongSpeiDescription()
     {
         var testDirectory = CreateTestDirectory();

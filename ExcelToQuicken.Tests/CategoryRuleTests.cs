@@ -17,6 +17,8 @@ public sealed class CategoryRuleTests
     [Fact]
     public void Engine_HonorsPriorityAndDisabledRules() { var rules = new[] { new CategoryRule { Priority = 2, MatchText = "shop", Category = "late" }, new CategoryRule { Priority = 1, MatchText = "shop", Category = "early" }, new CategoryRule { Priority = 0, MatchText = "shop", Category = "disabled", Enabled = false } }; Assert.Equal("early", new CategoryRuleEngine(rules).Match("shop", "").Category); }
     [Fact]
+    public void Engine_ReturnsOptionalPayeeReplacement() { var result = new CategoryRuleEngine(new[] { new CategoryRule { MatchText = "merchant", Category = "Food", Payee = "Friendly Merchant" } }).Match("merchant purchase", ""); Assert.Equal("Friendly Merchant", result.Payee); }
+    [Fact]
     public void Engine_ReportsInvalidRegexWithoutThrowing() { Assert.NotNull(CategoryRuleEngine.Test(new CategoryRule { MatchType = RuleMatchType.RegularExpression, MatchText = "[", Category = "x" }, "anything", "").Error); }
     [Fact]
     public void Store_RejectsInvalidImports() { Assert.Throws<InvalidDataException>(() => CategoryRuleStore.ParseAndValidate("{\"SchemaVersion\":99,\"Rules\":[]}")); Assert.Throws<InvalidDataException>(() => CategoryRuleStore.ParseAndValidate("{\"SchemaVersion\":1,\"Rules\":[{\"Name\":\"bad\"}]}")); }
