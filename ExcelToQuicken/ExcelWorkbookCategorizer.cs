@@ -75,24 +75,24 @@ public sealed class ExcelWorkbookCategorizer
                 var memo = memoColumn.HasValue
                     ? worksheet.Cell(row, memoColumn.Value).GetString()
                     : string.Empty;
+
+                // Match against the source values before formatting can shorten the payee.
+                var match = _postProcessor.DetermineMatch(description, memo);
+                if (match.Error != null) throw new InvalidDataException(match.Error);
+
                 var formatted = _postProcessor.FormatTransaction(description, memo);
-                if (!string.Equals(description, formatted.Description, StringComparison.Ordinal))
+                var outputDescription = string.IsNullOrWhiteSpace(match.Payee)
+                    ? formatted.Description
+                    : match.Payee;
+                if (!string.Equals(description, outputDescription, StringComparison.Ordinal))
                 {
-                    descriptionCell.Value = formatted.Description;
+                    descriptionCell.Value = outputDescription;
                 }
 
                 if (!string.IsNullOrWhiteSpace(formatted.Memo))
                 {
                     memoColumn ??= AppendMemoColumn(worksheet, layout, categoryColumn);
                     worksheet.Cell(row, memoColumn.Value).Value = formatted.Memo;
-                }
-
-                var match = _postProcessor.DetermineMatch(formatted.Description, formatted.Memo);
-                if (match.Error != null) throw new InvalidDataException(match.Error);
-
-                if (!string.IsNullOrWhiteSpace(match.Payee))
-                {
-                    descriptionCell.Value = match.Payee;
                 }
 
                 var categoryCell = worksheet.Cell(row, categoryColumn);

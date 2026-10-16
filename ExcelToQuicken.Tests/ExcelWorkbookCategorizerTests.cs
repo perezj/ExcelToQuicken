@@ -117,6 +117,40 @@ public sealed class ExcelWorkbookCategorizerTests
     }
 
     [Fact]
+    public void Categorize_MatchesOriginalDescriptionBeforePayeeTruncation()
+    {
+        var testDirectory = CreateTestDirectory();
+        var inputPath = Path.Combine(testDirectory, "input.xlsx");
+        var outputPath = Path.Combine(testDirectory, "output.xlsx");
+        const string description = "2026070240014BMOVP000453655830 SPEI RECIBIDO, BCO:0014 SANTANDER HR LIQ: 19:19:53 DEL CLIENTE RICARDO LOPEZ MARTINEZ DE LA CLABE 014375568410984102 CON RFC LOMR900523II2 CONCEPTO: TRANSFERENCIA A RENTA REFERENCIA: 5030193 CVE RAST: 2026070240014BMOVP000453655830";
+
+        try
+        {
+            using (var workbook = new XLWorkbook())
+            {
+                var worksheet = workbook.Worksheets.Add("Cuenta");
+                worksheet.Cell(1, 1).Value = "Date";
+                worksheet.Cell(1, 2).Value = "Description";
+                worksheet.Cell(1, 3).Value = "Category";
+                worksheet.Cell(2, 2).Value = description;
+                workbook.SaveAs(inputPath);
+            }
+
+            var rules = new[] { new CategoryRule { MatchText = "CLIENTE RICARDO LOPEZ MARTINEZ", Category = "Rental Income", Payee = "Ricardo Lopez Unit 2" } };
+            new ExcelWorkbookCategorizer(new TransactionPostProcessor(rules)).Categorize(inputPath, outputPath);
+
+            using var categorizedWorkbook = new XLWorkbook(outputPath);
+            var sheet = categorizedWorkbook.Worksheet("Cuenta");
+            Assert.Equal("Ricardo Lopez Unit 2", sheet.Cell(2, 2).GetString());
+            Assert.Equal("Rental Income", sheet.Cell(2, 3).GetString());
+        }
+        finally
+        {
+            Directory.Delete(testDirectory, recursive: true);
+        }
+    }
+
+    [Fact]
     public void Categorize_CreatesMemoColumnForLongSpeiDescription()
     {
         var testDirectory = CreateTestDirectory();
