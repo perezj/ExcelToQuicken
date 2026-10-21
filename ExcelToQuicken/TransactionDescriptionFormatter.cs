@@ -15,7 +15,11 @@ public static class TransactionDescriptionFormatter
         RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
 
     private static readonly Regex ConceptRegex = new(
-        @"\bINST\s*\)\s*,?\s*(?<value>.*?)(?=\s+CVE\s+RASTREO\b|$)",
+        @"\b(?:INST\s*\)|CONCEPTO\s*:)\s*,?\s*(?<value>.*?)(?=\s+(?:CVE\s+RASTREO|REFERENCIA)\s*:|$)",
+        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
+
+    private static readonly Regex ClientPayeeRegex = new(
+        @"\bDEL\s+(?<value>CLIENTE\b.*?)(?=\s+DE\s+LA\s+CLABE\b|\s+CLABE\b|\s+CONCEPTO\s*:|\s+REFERENCIA\s*:|$)",
         RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
 
     private static readonly Regex ReferenceMetadataRegex = new(
@@ -27,14 +31,18 @@ public static class TransactionDescriptionFormatter
         var source = Normalize(description);
         var existingMemo = Normalize(memo);
         var details = ExtractDetails(source);
+        var extractedClientPayee = ExtractValue(ClientPayeeRegex.Match(source));
+        var clientPayee = string.IsNullOrWhiteSpace(extractedClientPayee) ? null : extractedClientPayee;
 
         var operation = ReferenceMetadataRegex.Replace(source, string.Empty).Trim();
-        var payee = details.Count == 0
+        var payee = clientPayee ?? (details.Count == 0
             ? source
             : string.Join(" ", new[] { operation }.Concat(details.Select(detail => detail.Value)))
-                .Trim(' ', '-', ',');
+                .Trim(' ', '-', ','));
 
-        var detailMemo = details.Select(detail => $"{detail.Label}: {detail.Value}").ToList();
+        var detailMemo = clientPayee is not null
+            ? details.Where(detail => detail.Label.Equals("Concepto", StringComparison.OrdinalIgnoreCase)).Select(detail => detail.Value).ToList()
+            : details.Select(detail => $"{detail.Label}: {detail.Value}").ToList();
         var memoParts = detailMemo
             .Concat(IsSameAsSource(existingMemo, source) ? [] : [existingMemo])
             .Where(part => !string.IsNullOrWhiteSpace(part))
@@ -54,11 +62,12 @@ public static class TransactionDescriptionFormatter
 
     private static void AddMatch(List<(string Label, string Value)> details, string label, Match match)
     {
-        if (!match.Success) return;
-
-        var value = Normalize(match.Groups["value"].Value).Trim(',', '.', ';');
+        var value = ExtractValue(match);
         if (value.Length > 0) details.Add((label, value));
     }
+
+    private static string ExtractValue(Match match) =>
+        match.Success ? Normalize(match.Groups["value"].Value).Trim(',', '.', ';') : string.Empty;
 
     private static string Normalize(string? value) =>
         Regex.Replace(value ?? string.Empty, @"\s+", " ").Trim();

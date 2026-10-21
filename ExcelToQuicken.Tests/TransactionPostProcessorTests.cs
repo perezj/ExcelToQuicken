@@ -43,4 +43,14 @@ public sealed class TransactionPostProcessorTests
         Assert.True(result.Memo.Length <= 255);
         Assert.EndsWith("...", result.Memo);
     }
+
+    [Fact]
+    public void FormatTransaction_UsesBanorteClientAsPayeeAndConceptAsMemo()
+    {
+        var result = _processor.FormatTransaction(
+            "MBAN01002601020054576787 SPEI RECIBIDO, BCO:0012 BBVA MEXICO HR LIQ: 05:00:22 DEL CLIENTE ALAN GIOVANNI GONZALEZ RODRIGUEZ DE LA CLABE 012180015989813745 CON RFC GORA010502GQ3 CONCEPTO: renta y luz REFERENCIA: 0912250 CVE RAST: MBAN01002601020054576787");
+
+        Assert.Equal("CLIENTE ALAN GIOVANNI GONZALEZ RODRIGUEZ", result.Description);
+        Assert.Equal("renta y luz", result.Memo);
+    }
 }

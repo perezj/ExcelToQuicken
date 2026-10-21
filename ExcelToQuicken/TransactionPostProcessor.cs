@@ -17,10 +17,10 @@ public sealed class TransactionPostProcessor
     {
         foreach (var tx in transactions)
         {
+            var match = _engine.Match(tx.Description, tx.Memo);
             var formatted = FormatTransaction(tx.Description, tx.Memo);
             tx.Description = formatted.Description;
             tx.Memo = formatted.Memo;
-            var match = _engine.Match(tx.Description, tx.Memo);
             if (match.Matched)
             {
                 tx.Category = match.Category;
